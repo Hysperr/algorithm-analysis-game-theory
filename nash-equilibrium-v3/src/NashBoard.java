@@ -7,7 +7,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 public class NashBoard extends Application {
@@ -18,6 +20,8 @@ public class NashBoard extends Application {
     private Button bSolve, bScramble;
     private GridPane gridPane;
     private BorderPane borderPane;
+    List<Integer> row_changes = new ArrayList<Integer>();
+    List<Integer> col_changes = new ArrayList<Integer>();
     private int[][][] b = {
             {{4, 2}, {0, 0}, {5, 0}, {0, 0}},
             {{1, 4}, {1, 4}, {0, 5}, {-1, 0}},
@@ -77,8 +81,26 @@ public class NashBoard extends Application {
                 }
             }
         }
+        row_changes.clear();
+        col_changes.clear();
         System.out.println("Found " + found + " Nash equilibria\n");
     }
+
+    // give it the x and y location of changes array form, after solving empty,
+    private void textFieldParserUpdatesBoardBeforeSolving() {
+        for (int i = 0; i < row_changes.size(); ++i) {
+            TextField tf = (TextField) getNodeFromGridPane(this.gridPane, col_changes.get(i), row_changes.get(i));
+            String str = tf.getText();
+            int[] arr = Arrays.stream(str.substring(1, str.length() - 1).
+                    split(",")).
+                    map(String::trim).
+                    mapToInt(Integer::parseInt).
+                    toArray();
+            b[row_changes.get(i)][col_changes.get(i)] = arr;
+            System.out.println("Change detected at location (" + row_changes.get(i) + ", " + col_changes.get(i) + ")");
+        }
+    }
+
 
     public void printBoard() {
         for (int i = 0; i < 4; ++i) {
@@ -126,8 +148,17 @@ public class NashBoard extends Application {
         for (int i = 0; i < 4; ++i) {
             for (int j = 0; j < 4; ++j) {
                 TextField text = new TextField(Arrays.toString(b[i][j]));
-                text.setPrefSize(800, 800);
-                text.setStyle("-fx-font-size: 50px");
+                text.setPrefSize(700, 700);
+                text.setStyle("-fx-font-size: 40px");
+                text.setOnKeyReleased(event -> {
+                    if (event.getCode().isDigitKey()) {
+                        int row = GridPane.getRowIndex((TextField) event.getSource());
+                        int col = GridPane.getColumnIndex((TextField) event.getSource());
+                        row_changes.add(row);
+                        col_changes.add(col);
+                        System.out.println(((TextField) event.getSource()).getText());
+                    }
+                });
                 gridPane.add(text, j, i);
             }
         }
@@ -135,7 +166,10 @@ public class NashBoard extends Application {
         // Place into borderpane
         borderPane = new BorderPane(gridPane);
         bSolve = new Button("SOLVE!");
-        bSolve.setOnMouseClicked(event -> findNashEquilibrium());
+        bSolve.setOnMouseClicked(event -> {
+            textFieldParserUpdatesBoardBeforeSolving();
+            findNashEquilibrium();
+        });
 
         bScramble = new Button("SCRAMBLE!");
         bScramble.setOnMouseClicked(event -> {
@@ -182,7 +216,7 @@ public class NashBoard extends Application {
         nashBoard.printBoard();
         nashBoard.findNashEquilibrium();
 
-        primaryStage.setScene(new Scene(nashBoard.getBorderPane(), 800, 800));
+        primaryStage.setScene(new Scene(nashBoard.getBorderPane(), 700, 700));
         primaryStage.setTitle("TITULO");
         primaryStage.show();
 
