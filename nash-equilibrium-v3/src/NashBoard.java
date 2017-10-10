@@ -1,20 +1,23 @@
 import javafx.application.Application;
+import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public class NashBoard extends Application {
     public static void main(String[] args) {
         launch(args);
     }
 
+    private Button bSolve, bScramble;
     private GridPane gridPane;
+    private BorderPane borderPane;
     private int[][][] b = {
             {{4, 2}, {0, 0}, {5, 0}, {0, 0}},
             {{1, 4}, {1, 4}, {0, 5}, {-1, 0}},
@@ -22,11 +25,20 @@ public class NashBoard extends Application {
             {{0, 0}, {0, 0}, {0, -1}, {0, 0}}
     };
 
-    public NashBoard() { initializeGridPane(); }
+    public NashBoard() {
+        initializeGridPane();
+    }
 
-    public GridPane getGridPane() { return gridPane; }
+    public GridPane getGridPane() {
+        return gridPane;
+    }
+
+    public BorderPane getBorderPane() {
+        return borderPane;
+    }
 
     public void findNashEquilibrium() {
+        printBoard();
         int[] b_array = new int[4], a_array = new int[4];
         int b_max = Integer.MIN_VALUE;
         int a_max = Integer.MIN_VALUE;
@@ -65,7 +77,7 @@ public class NashBoard extends Application {
                 }
             }
         }
-        System.out.println("Found " + found + " Nash equilibria");
+        System.out.println("Found " + found + " Nash equilibria\n");
     }
 
     public void printBoard() {
@@ -81,6 +93,17 @@ public class NashBoard extends Application {
             System.out.println();
         }
         System.out.println("==========================");
+    }
+
+    private Node getNodeFromGridPane(GridPane gridPane, int col, int row) {
+        for (Node node : gridPane.getChildren()) {
+            if (node instanceof Group) continue;
+            if (GridPane.getColumnIndex(node) == col && GridPane.getRowIndex(node) == row) {
+                return node;
+            }
+        }
+        System.out.println("RETURNING NULL!!!");
+        return null;
     }
 
     private void initializeGridPane() {
@@ -108,22 +131,48 @@ public class NashBoard extends Application {
                 gridPane.add(text, j, i);
             }
         }
-    }
+
+        // Place into borderpane
+        borderPane = new BorderPane(gridPane);
+        bSolve = new Button("SOLVE!");
+        bSolve.setOnMouseClicked(event -> findNashEquilibrium());
+
+        bScramble = new Button("SCRAMBLE!");
+        bScramble.setOnMouseClicked(event -> {
+            System.out.println("Scrambled!");
+            Random r = new Random();
+            for (int i = 0; i < 4; ++i) {
+                for (int j = 0; j < 4; ++j) {
+                    for (int k = 0; k < 2; ++k) {
+                        b[i][j][k] = r.nextInt(10) + 1; // -10 to 10
+                    }
+                }
+            }
+            // update gridpane text fields
+            for (int i = 0; i < 4; ++i) {
+                for (int j = 0; j < 4; ++j) {
+                    TextField tf = (TextField) getNodeFromGridPane(this.gridPane, j, i);
+                    tf.setText(Arrays.toString(b[i][j]));
+                }
+            }
+        }); // end lambda bSolve
+
+        HBox buttonLayout = new HBox();
+        buttonLayout.getChildren().add(bSolve);
+        buttonLayout.getChildren().add(bScramble);
+
+        HBox.setHgrow(bSolve, Priority.ALWAYS);
+        HBox.setHgrow(bScramble, Priority.ALWAYS);
+
+        int btnCount = buttonLayout.getChildren().size();
+        bSolve.prefWidthProperty().bind(buttonLayout.widthProperty().divide(btnCount));
+        bScramble.prefWidthProperty().bind(buttonLayout.widthProperty().divide(btnCount));
 
 
+        borderPane.setBottom(buttonLayout);
 
 
-
-
-
-
-
-
-
-
-
-
-
+    } // end initializeGridpane
 
 
     @Override
@@ -133,9 +182,17 @@ public class NashBoard extends Application {
         nashBoard.printBoard();
         nashBoard.findNashEquilibrium();
 
-        primaryStage.setScene(new Scene(nashBoard.getGridPane(), 800, 800));
+        primaryStage.setScene(new Scene(nashBoard.getBorderPane(), 800, 800));
         primaryStage.setTitle("TITULO");
         primaryStage.show();
 
     }
 }
+
+
+//bSolve.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE); // allows button to grow
+// bScramble.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+//  if (GridPane.getRowIndex(gridPane.getChildren().get(i+1)) == i && GridPane.getColumnIndex(gridPane.getChildren().get(j+1)) == j) { // +1 because index 0 in getChildren() list is weird group object
+////   System.out.println("row: " + i + " col: " + j);
+//  }
