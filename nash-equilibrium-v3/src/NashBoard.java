@@ -17,11 +17,10 @@ public class NashBoard extends Application {
         launch(args);
     }
 
-    private Button bSolve, bScramble;
     private GridPane gridPane;
     private BorderPane borderPane;
-    List<Integer> row_changes = new ArrayList<Integer>();
-    List<Integer> col_changes = new ArrayList<Integer>();
+    private List<Integer> row_changes = new ArrayList<Integer>();
+    private List<Integer> col_changes = new ArrayList<Integer>();
     private int[][][] b = {
             {{4, 2}, {0, 0}, {5, 0}, {0, 0}},
             {{1, 4}, {1, 4}, {0, 5}, {-1, 0}},
@@ -29,18 +28,24 @@ public class NashBoard extends Application {
             {{0, 0}, {0, 0}, {0, -1}, {0, 0}}
     };
 
+    /**
+     * Constructor: Initialize NashBoard with GUI
+     */
     public NashBoard() {
         initializeGridPane();
     }
 
-    public GridPane getGridPane() {
-        return gridPane;
-    }
-
+    /**
+     * Gets the borderpane which holds the gridpane in its center and
+     * buttons in its lower. See initializeGridPane()*
+     */
     public BorderPane getBorderPane() {
         return borderPane;
     }
 
+    /**
+     * Solves nashboard for the nash equilibria and prints the results.
+     */
     public void findNashEquilibrium() {
         printBoard();
         int[] b_array = new int[4], a_array = new int[4];
@@ -76,7 +81,8 @@ public class NashBoard extends Application {
                     System.out.println("Nash equilibrium found at: (" +
                             i + ", " + j + ") => Value: [" +
                             b[i][j][0] + ", " +
-                            b[i][j][1] + "]");
+                            b[i][j][1] + "]"
+                    );
                     ++found;
                 }
             }
@@ -84,24 +90,29 @@ public class NashBoard extends Application {
         row_changes.clear();
         col_changes.clear();
         System.out.println("Found " + found + " Nash equilibria\n");
-    }
+    } // end findNashEquilibrium
 
-    // give it the x and y location of changes array form, after solving empty,
+    /**
+     * Updates the nashboard under-the-hood by applying the row and column changes
+     * detected by the textfield key release event. These changes are located in
+     * member variables row_changes and col_changes.
+     */
     private void textFieldParserUpdatesBoardBeforeSolving() {
         for (int i = 0; i < row_changes.size(); ++i) {
             TextField tf = (TextField) getNodeFromGridPane(this.gridPane, col_changes.get(i), row_changes.get(i));
             String str = tf.getText();
-            int[] arr = Arrays.stream(str.substring(1, str.length() - 1).
-                    split(",")).
-                    map(String::trim).
-                    mapToInt(Integer::parseInt).
-                    toArray();
+            int[] arr = Arrays.stream(str.substring(1, str.length() - 1)
+                    .split(","))
+                    .map(String::trim)
+                    .mapToInt(Integer::parseInt)
+                    .toArray();
             b[row_changes.get(i)][col_changes.get(i)] = arr;
-            System.out.println("Change detected at location (" + row_changes.get(i) + ", " + col_changes.get(i) + ")");
         }
-    }
+    } // end textFieldParserUpdatesBoardBeforeSolving
 
-
+    /**
+     * Prints the nashboard. What did you expect?
+     */
     public void printBoard() {
         for (int i = 0; i < 4; ++i) {
             for (int j = 0; j < 4; ++j) {
@@ -117,6 +128,17 @@ public class NashBoard extends Application {
         System.out.println("==========================");
     }
 
+    /**
+     * Retrieves the Node element in the gridpane by passing in indices. This
+     * relatively simple function coupled with its extreme usefulness with no
+     * alternatives leaves me ABSOLUTELY BAFFLED about why isn't implemented
+     * in a standard Java library. If it is somewhere please let me know.
+     *
+     * @param gridPane gridpane object
+     * @param col      column index
+     * @param row      row index
+     * @return Node object or null if no node is found. Careful.
+     */
     private Node getNodeFromGridPane(GridPane gridPane, int col, int row) {
         for (Node node : gridPane.getChildren()) {
             if (node instanceof Group) continue;
@@ -128,6 +150,10 @@ public class NashBoard extends Application {
         return null;
     }
 
+    /**
+     * Helper function for the constructor to initialize gridpane,
+     * borderpane including any buttons, textfields, and event listeners.
+     */
     private void initializeGridPane() {
         gridPane = new GridPane();
         gridPane.setGridLinesVisible(true);
@@ -144,45 +170,46 @@ public class NashBoard extends Application {
             cc.setFillWidth(true);
             gridPane.getColumnConstraints().add(cc);
         }
-
         for (int i = 0; i < 4; ++i) {
             for (int j = 0; j < 4; ++j) {
                 TextField text = new TextField(Arrays.toString(b[i][j]));
                 text.setPrefSize(700, 700);
-                text.setStyle("-fx-font-size: 40px");
+                text.setStyle("-fx-font-size: 40px; -fx-alignment: center");
                 text.setOnKeyReleased(event -> {
                     if (event.getCode().isDigitKey()) {
                         int row = GridPane.getRowIndex((TextField) event.getSource());
                         int col = GridPane.getColumnIndex((TextField) event.getSource());
                         row_changes.add(row);
                         col_changes.add(col);
-                        System.out.println(((TextField) event.getSource()).getText());
+                        System.out.println("Change detected at location (" + row + ", " + col +
+                                ") Value now => " + ((TextField) event.getSource()).getText()
+                        );
                     }
                 });
                 gridPane.add(text, j, i);
             }
         }
-
-        // Place into borderpane
+        // Place our gridpane into borderpane center
         borderPane = new BorderPane(gridPane);
-        bSolve = new Button("SOLVE!");
+
+        Button bSolve = new Button("SOLVE!");
         bSolve.setOnMouseClicked(event -> {
             textFieldParserUpdatesBoardBeforeSolving();
             findNashEquilibrium();
         });
 
-        bScramble = new Button("SCRAMBLE!");
+        Button bScramble = new Button("SCRAMBLE!");
         bScramble.setOnMouseClicked(event -> {
             System.out.println("Scrambled!");
             Random r = new Random();
             for (int i = 0; i < 4; ++i) {
                 for (int j = 0; j < 4; ++j) {
                     for (int k = 0; k < 2; ++k) {
-                        b[i][j][k] = r.nextInt(10) + 1; // -10 to 10
+                        b[i][j][k] = r.nextInt(10) + 1; // [1-10]
                     }
                 }
             }
-            // update gridpane text fields
+            // update gridpane textfields for user
             for (int i = 0; i < 4; ++i) {
                 for (int j = 0; j < 4; ++j) {
                     TextField tf = (TextField) getNodeFromGridPane(this.gridPane, j, i);
@@ -201,11 +228,9 @@ public class NashBoard extends Application {
         int btnCount = buttonLayout.getChildren().size();
         bSolve.prefWidthProperty().bind(buttonLayout.widthProperty().divide(btnCount));
         bScramble.prefWidthProperty().bind(buttonLayout.widthProperty().divide(btnCount));
-
+        // buttons now take up equal amount of space side-by-side
 
         borderPane.setBottom(buttonLayout);
-
-
     } // end initializeGridpane
 
 
@@ -217,16 +242,8 @@ public class NashBoard extends Application {
         nashBoard.findNashEquilibrium();
 
         primaryStage.setScene(new Scene(nashBoard.getBorderPane(), 700, 700));
-        primaryStage.setTitle("TITULO");
+        primaryStage.setTitle("NASH-EQ");
         primaryStage.show();
 
     }
 }
-
-
-//bSolve.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE); // allows button to grow
-// bScramble.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-
-//  if (GridPane.getRowIndex(gridPane.getChildren().get(i+1)) == i && GridPane.getColumnIndex(gridPane.getChildren().get(j+1)) == j) { // +1 because index 0 in getChildren() list is weird group object
-////   System.out.println("row: " + i + " col: " + j);
-//  }
